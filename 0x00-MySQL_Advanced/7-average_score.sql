@@ -1,3 +1,8 @@
+-- Procedure: ComputeAverageScoreForUser
+-- Description: This procedure computes and stores the average score for a specified user.
+-- Input: user_id - The ID of the user for whom the average score is to be computed.
+-- Output: None
+
 DELIMITER //
 
 CREATE PROCEDURE ComputeAverageScoreForUser(IN user_id INT)
