@@ -1,5 +1,6 @@
 -- Rank country origins of bands by the number of (non-unique) fans
-SELECT origin, COUNT(*) as nb_fans
-FROM metal_bands
-GROUP BY origin
+SELECT mb.origin, SUM(sfd.fan_count) AS nb_fans
+FROM metal_bands mb
+JOIN sample_fan_data sfd ON mb.id = sfd.band_id
+GROUP BY mb.origin
 ORDER BY nb_fans DESC;
