@@ -21,11 +21,11 @@ def log_stats(logs_collection):
 
     # Methods
     methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
-    method_counts = {method: logs_collection.count_documents({"method": method})
+    method_counts = {method: logs_collection.count_documents({"method": method}) 
                      for method in methods}
 
     # Number of status checks
-    status_check_count = logs_collection.count_documents({"method": "GET",
+    status_check_count = logs_collection.count_documents({"method": "GET", 
                                                           "path": "/status"})
 
     # Display stats
