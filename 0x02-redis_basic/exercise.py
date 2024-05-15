@@ -53,17 +53,32 @@ class Cache:
         return str(uuid.uuid4())
 
 
-if __name__ == "__main__":
-    cache = Cache()
-    s1 = cache.store("first")
-    print(s1)
-    s2 = cache.store("second")
-    print(s2)
-    s3 = cache.store("third")
-    print(s3)
-    inputs_key = "{}:inputs".format(cache.store.__qualname__)
-    outputs_key = "{}:outputs".format(cache.store.__qualname__)
+def replay(func):
+    """Display the history of calls of a particular function.
+
+    Args:
+        func (Callable): The function whose history of calls needs to
+        be displayed.
+    """
+    inputs_key = "{}:inputs".format(func.__qualname__)
+    outputs_key = "{}:outputs".format(func.__qualname__)
+
+    # Retrieve inputs and outputs from Redis
     inputs = cache._redis.lrange(inputs_key, 0, -1)
     outputs = cache._redis.lrange(outputs_key, 0, -1)
-    print("inputs:", [inp.decode() for inp in inputs])
-    print("outputs:", [out.decode() for out in outputs])
+
+    # Display the history of calls
+    print("{} was called {} times:".format(func.__qualname__, len(inputs)))
+    for inp, out in zip(inputs, outputs):
+        print("{}(*{}) -> {}".format(
+            func.__qualname__, inp.decode(), out.decode()
+        ))
+
+
+if __name__ == "__main__":
+    # Example usage
+    cache = Cache()
+    cache.store("foo")
+    cache.store("bar")
+    cache.store(42)
+    replay(cache.store)
