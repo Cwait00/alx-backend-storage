@@ -18,8 +18,8 @@ def count_calls(func: Callable[..., T]) -> Callable[..., T]:
     """
     @functools.wraps(func)
     def wrapper(self: "Cache", *args: Any, **kwargs: Any) -> T:
-        key = func.__qualname__
-        self._redis.incr(key)
+        key = func.__qualname__  # Use the qualified name of the method
+        self._redis.incr(key)  # Increment the count for this method
         return func(self, *args, **kwargs)
 
     return wrapper
@@ -54,8 +54,7 @@ class Cache:
         :type key: str
         :param fn: Optional conversion function to apply on the retrieved data.
         :type fn: callable, optional
-        :return: Retrieved data, optionally converted using the provided
-        function.
+        :return: Retrieved data, optionally converted using the provided function.
         :rtype: Any
         """
         data = self._redis.get(key)
