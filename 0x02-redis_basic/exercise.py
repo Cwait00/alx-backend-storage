@@ -2,26 +2,37 @@
 import functools
 import redis
 import uuid
-from typing import Callable, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
 T = TypeVar("T")
 
 
-def count_calls(func: Callable[..., T]) -> Callable[..., T]:
+def call_history(func: Callable[..., T]) -> Callable[..., T]:
     """
-    Decorator to count the number of times a method is called.
+    Decorator to store the history of inputs and outputs for a function.
 
-    :param func: Method to decorate.
+    :param func: Function to decorate.
     :type func: callable
-    :return: Wrapped function that increments the call count.
+    :return: Wrapped function that stores input and output history.
     :rtype: callable
     """
-    call_count_key = f"{func.__module__}.{func.__qualname__}.calls"
-
     @functools.wraps(func)
     def wrapper(self: "Cache", *args: Any, **kwargs: Any) -> T:
-        self._redis.incr(call_count_key)
-        return func(self, *args, **kwargs)
+        key = func.__qualname__
+        input_key = f"{key}:inputs"
+        output_key = f"{key}:outputs"
+
+        # Store input arguments as a string representation
+        input_args = str(args)
+        self._redis.rpush(input_key, input_args)
+
+        # Execute the function to get the output
+        output = func(self, *args, **kwargs)
+
+        # Store the output
+        self._redis.rpush(output_key, output)
+
+        return output
 
     return wrapper
 
@@ -33,7 +44,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Store data in Redis and return the key.
@@ -62,3 +73,21 @@ class Cache:
         if fn:
             data = fn(data)
         return data
+
+    def replay(self, func: Callable[..., T]) -> None:
+        """
+        Replay the history of calls for a function.
+
+        :param func: Function to replay the history for.
+        :type func: callable
+        """
+        key = func.__qualname__
+        input_key = f"{key}:inputs"
+        output_key = f"{key}:outputs"
+
+        inputs = self._redis.lrange(input_key, 0, -1)
+        outputs = self._redis.lrange(output_key, 0, -1)
+
+        print(f"{func.__name__} was called {len(inputs)} times:")
+        for input_args, output in zip(inputs, outputs):
+            print(f"{func.__name__}(*{input_args}) -> {output}")
