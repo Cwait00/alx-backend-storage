@@ -16,10 +16,11 @@ def count_calls(func: Callable[..., T]) -> Callable[..., T]:
     :return: Wrapped function that increments the call count.
     :rtype: callable
     """
+    call_count_key = f"{func.__module__}.{func.__qualname__}.calls"
+
     @functools.wraps(func)
     def wrapper(self: "Cache", *args: Any, **kwargs: Any) -> T:
-        key = func.__qualname__
-        self._redis.incr(key)
+        self._redis.incr(call_count_key)
         return func(self, *args, **kwargs)
 
     return wrapper
