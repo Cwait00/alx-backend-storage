@@ -3,7 +3,6 @@
 Cache class for storing data in Redis.
 """
 
-
 import redis
 import uuid
 from typing import Union, Callable, Optional
@@ -34,6 +33,21 @@ def call_history(method: Callable) -> Callable:
         return output
 
     return wrapper
+
+
+def replay(func: Callable) -> None:
+    """
+    Display the history of calls for a particular function.
+    """
+    inputs_key = "{}:inputs".format(func.__qualname__)
+    outputs_key = "{}:outputs".format(func.__qualname__)
+
+    inputs = cache._redis.lrange(inputs_key, 0, -1)
+    outputs = cache._redis.lrange(outputs_key, 0, -1)
+
+    print("{} was called {} times:".format(func.__qualname__, len(inputs)))
+    for args, output in zip(inputs, outputs):
+        print("{}(*{}) -> {}".format(func.__qualname__, args, output))
 
 
 class Cache:
@@ -109,15 +123,8 @@ class Cache:
 if __name__ == "__main__":
     cache = Cache()
 
-    s1 = cache.store("first")
-    print(s1)
-    s2 = cache.store("second")
-    print(s2)
-    s3 = cache.store("third")
-    print(s3)
+    cache.store("foo")
+    cache.store("bar")
+    cache.store(42)
 
-    inputs = cache._redis.lrange("{}:inputs".format(cache.store.__qualname__), 0, -1)
-    outputs = cache._redis.lrange("{}:outputs".format(cache.store.__qualname__), 0, -1)
-
-    print("inputs: {}".format(inputs))
-    print("outputs: {}".format(outputs))
+    replay(cache.store)
