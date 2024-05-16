@@ -3,24 +3,36 @@
 Cache class for storing data in Redis.
 """
 
+
 import redis
 import uuid
 from typing import Union, Callable, Optional
 from functools import wraps
 
 
-def count_calls(method: Callable) -> Callable:
+def call_history(method: Callable) -> Callable:
     """
-    Decorator to count how many times a method of the Cache class is called.
+    Decorator to store the history of inputs and outputs for a function in Redis.
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         """
-        Wrapper function to increment the call count and call the original method.
+        Wrapper function to store input and output history in Redis.
         """
-        key = method.__qualname__
-        self._redis.incr(key)
-        return method(self, *args, **kwargs)
+        input_key = "{}:inputs".format(method.__qualname__)
+        output_key = "{}:outputs".format(method.__qualname__)
+
+        # Store input
+        self._redis.rpush(input_key, str(args))
+
+        # Execute the wrapped function to retrieve the output
+        output = method(self, *args, **kwargs)
+
+        # Store output
+        self._redis.rpush(output_key, output)
+
+        return output
+
     return wrapper
 
 
@@ -35,7 +47,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Store the input data in Redis using a randomly generated key.
@@ -97,9 +109,15 @@ class Cache:
 if __name__ == "__main__":
     cache = Cache()
 
-    cache.store(b"first")
-    print(cache.get(cache.store.__qualname__))
+    s1 = cache.store("first")
+    print(s1)
+    s2 = cache.store("second")
+    print(s2)
+    s3 = cache.store("third")
+    print(s3)
 
-    cache.store(b"second")
-    cache.store(b"third")
-    print(cache.get(cache.store.__qualname__))
+    inputs = cache._redis.lrange("{}:inputs".format(cache.store.__qualname__), 0, -1)
+    outputs = cache._redis.lrange("{}:outputs".format(cache.store.__qualname__), 0, -1)
+
+    print("inputs: {}".format(inputs))
+    print("outputs: {}".format(outputs))
