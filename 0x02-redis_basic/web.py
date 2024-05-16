@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import requests
 import redis
 import time
@@ -8,10 +6,10 @@ import time
 def get_page(url: str) -> str:
     """
     Retrieve the HTML content of a URL and cache the result with an expiration time of 10 seconds.
-    
+
     Args:
         url: The URL to retrieve the HTML content from.
-    
+
     Returns:
         The HTML content of the URL.
     """
@@ -41,7 +39,7 @@ def get_page(url: str) -> str:
 if __name__ == "__main__":
     # Test URL with slow response for demonstration
     test_url = "http://slowwly.robertomurray.co.uk/delay/10000/url/http://www.google.com"
-    
+
     # Call the function multiple times to see the caching behavior
     for _ in range(3):
         print(get_page(test_url))
