@@ -39,6 +39,7 @@ def replay(func: Callable) -> None:
     """
     Display the history of calls for a particular function.
     """
+    cache = Cache()  # Define cache variable here
     inputs_key = "{}:inputs".format(func.__qualname__)
     outputs_key = "{}:outputs".format(func.__qualname__)
 
@@ -47,7 +48,7 @@ def replay(func: Callable) -> None:
 
     print("{} was called {} times:".format(func.__qualname__, len(inputs)))
     for args, output in zip(inputs, outputs):
-        print("{}(*{}) -> {}".format(func.__qualname__, args, output))
+        print("{}(*{}) -> {}".format(func.__qualname__, eval(args.decode()), output.decode()))
 
 
 class Cache:
