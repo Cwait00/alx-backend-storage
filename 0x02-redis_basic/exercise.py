@@ -1,7 +1,28 @@
 #!/usr/bin/env python3
+import functools
 import redis
 import uuid
-from typing import Any, Callable, Optional, Union
+from typing import Callable, Optional, TypeVar, Union
+
+T = TypeVar("T")
+
+
+def count_calls(func: Callable[..., T]) -> Callable[..., T]:
+    """
+    Decorator to count the number of times a method is called.
+
+    :param func: Method to decorate.
+    :type func: callable
+    :return: Wrapped function that increments the call count.
+    :rtype: callable
+    """
+    @functools.wraps(func)
+    def wrapper(self: "Cache", *args: Any, **kwargs: Any) -> T:
+        key = func.__qualname__
+        self._redis.incr(key)
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Cache:
@@ -11,6 +32,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Store data in Redis and return the key.
@@ -32,33 +54,11 @@ class Cache:
         :type key: str
         :param fn: Optional conversion function to apply on the retrieved data.
         :type fn: callable, optional
-        :return: Retrieved data, optionally converted using the
-        provided function.
+        :return: Retrieved data, optionally converted using the provided
+        function.
         :rtype: Any
         """
         data = self._redis.get(key)
         if fn:
             data = fn(data)
         return data
-
-    def get_str(self, key: str) -> str:
-        """
-        Retrieve data from Redis and decode it as a UTF-8 string.
-
-        :param key: Key associated with the stored data.
-        :type key: str
-        :return: Retrieved data decoded as a UTF-8 string.
-        :rtype: str
-        """
-        return self.get(key, lambda d: d.decode("utf-8"))
-
-    def get_int(self, key: str) -> int:
-        """
-        Retrieve data from Redis and convert it to an integer.
-
-        :param key: Key associated with the stored data.
-        :type key: str
-        :return: Retrieved data converted to an integer.
-        :rtype: int
-        """
-        return self.get(key, int)
