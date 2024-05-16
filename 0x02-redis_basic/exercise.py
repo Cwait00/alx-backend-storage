@@ -18,8 +18,8 @@ def count_calls(func: Callable[..., T]) -> Callable[..., T]:
     """
     @functools.wraps(func)
     def wrapper(self: "Cache", *args: Any, **kwargs: Any) -> T:
-        key = func.__qualname__  # Use the qualified name of the method
-        self._redis.incr(key)  # Increment the count for this method
+        key = func.__qualname__
+        self._redis.incr(key)
         return func(self, *args, **kwargs)
 
     return wrapper
